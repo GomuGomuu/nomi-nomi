@@ -4,19 +4,21 @@ This repository contains the source code for a React Native application called N
 
 **Features:**
 
-* **Camera-based Card Recognition:** The app captures images of cards using the device camera and sends them to a server for recognition.
-* **Card Details Display:**  After recognition, the app displays detailed information about the recognized cards, including name, type, rarity, power, cost, and effects.
-* **Wallet Integration (Placeholder):**  The app has a placeholder feature for adding illustrations to a user's wallet, allowing them to save their favorites.
-* **Connection Checking:** The app allows users to test their connection to the recognition server.
+- **Camera-based Card Recognition:** The app captures images of cards using the device camera and sends them to a server for recognition.
+- **Card Details Display:** After recognition, the app displays detailed information about the recognized cards, including name, type, rarity, power, cost, and effects.
+- **Wallet Integration (Placeholder):** The app has a placeholder feature for adding illustrations to a user's wallet, allowing them to save their favorites.
+- **Connection Checking:** The app allows users to test their connection to the recognition server.
 
 **Getting Started:**
 
-1. **Clone the repository:** 
+1. **Clone the repository:**
+
    ```bash
    git clone https://github.com/GomuGomuu/nomi-nomi.git
    ```
 
 2. **Install dependencies:**
+
    ```bash
    npm install
    ```
@@ -28,10 +30,9 @@ This repository contains the source code for a React Native application called N
 
 **Development:**
 
-* The main application logic is located in the `app` directory.
-* Components are organized within the `components` folder.
-* Constants and hooks are defined in `constants` and `hooks` respectively.
-* `scripts/reset-project.js` provides a way to reset the project to a blank state.
+- The main application logic is located in the `app` directory.
+- Components are organized within the `components` folder.
+- Constants and hooks are defined in `constants` and `hooks` respectively.
 
 **Running the App:**
 
@@ -39,16 +40,16 @@ You can run the app on a development build, Android emulator, iOS simulator, or 
 
 **Dependencies:**
 
-* Expo
-* Expo Camera
-* Expo Router
-* Axios
-* Expo Font
-* Expo Image Manipulator
-* React Native Reanimated
-* React Native Gesture Handler
+- Expo
+- Expo Camera
+- Expo Router
+- Axios
+- Expo Font
+- Expo Image Manipulator
+- React Native Reanimated
+- React Native Gesture Handler
 
 **Additional Information:**
 
-* The app relies on a server-side card recognition API, which is not included in this repository.
-* The "Add to Wallet" feature is a placeholder and requires further implementation.
+- The app relies on a server-side card recognition API, which is not included in this repository.
+- The "Add to Wallet" feature is a placeholder and requires further implementation.
