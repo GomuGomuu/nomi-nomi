@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import axios from "axios";
 import * as ImageManipulator from "expo-image-manipulator";
+import CardListModal from "@/components/CardListModal";
 
 export default function App() {
   const [facing, setFacing] = useState<CameraType>("back");
@@ -19,8 +20,10 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [uploadCanceled, setUploadCanceled] = useState(false);
   const [pingResponse, setPingResponse] = useState<string | null>(null);
+  const [recognizedCards, setRecognizedCards] = useState<any[]>([]);
+  const [showCardModal, setShowCardModal] = useState(false);
 
-  const apiEndpoint = "http://10.0.0.128:5000/upload";
+  const apiEndpoint = "http://10.0.0.128:5000/card/recognize";
   const pingEndpoint = "http://10.0.0.128:5000/ping";
   const username = "admin";
   const password = "password";
@@ -55,11 +58,6 @@ export default function App() {
     }
   }
 
-  function generatePhotoName(): string {
-    const date = new Date();
-    return `photo_${date.getTime()}.jpg`;
-  }
-
   async function cropImage(uri: string) {
     try {
       const image = await ImageManipulator.manipulateAsync(uri, []);
@@ -85,8 +83,7 @@ export default function App() {
 
       const fixedWidth = 800;
       const aspectRatio = originalHeight / originalWidth;
-      const heightAdjustmentFactor = 1;
-      const resizedHeight = fixedWidth * aspectRatio * heightAdjustmentFactor;
+      const resizedHeight = fixedWidth * aspectRatio;
 
       const resizedImage = await ImageManipulator.manipulateAsync(result.uri, [
         {
@@ -121,7 +118,9 @@ export default function App() {
           Authorization: `Basic ${btoa(`${username}:${password}`)}`,
         },
       });
-      console.log("Image uploaded:", response.data);
+
+      setRecognizedCards(response.data.possible_cards);
+      setShowCardModal(true);
     } catch (error) {
       console.error("Error uploading the image:", error);
     }
@@ -160,26 +159,34 @@ export default function App() {
         <Modal visible={loading} transparent animationType="fade">
           <View style={styles.modalContainer}>
             <ActivityIndicator size="large" color="#0000ff" />
-            <Text style={styles.loadingText}>Sending photo...</Text>
+            <Text style={styles.loadingText}>Processing image...</Text>
             <TouchableOpacity
               style={styles.cancelButton}
               onPress={cancelUpload}
             >
-              <Text style={styles.cancelText}>Cancel</Text>
+              <Text style={styles.cancelButtonText}>
+                Cancel image recognition
+              </Text>
             </TouchableOpacity>
           </View>
         </Modal>
+        <CardListModal
+          visible={showCardModal}
+          cards={recognizedCards}
+          onClose={() => setShowCardModal(false)}
+        />
       </View>
       <TouchableOpacity style={styles.button} onPress={checkConnection}>
         <Text style={styles.text}>Check Connection</Text>
       </TouchableOpacity>
       {pingResponse && <Text style={styles.pingMessage}>{pingResponse}</Text>}
-
-      {uploadCanceled && (
-        <Text style={styles.cancelMessage}>Upload canceled</Text>
-      )}
     </View>
   );
+}
+
+function generatePhotoName() {
+  const timestamp = Date.now();
+  return `photo_${timestamp}.jpg`;
 }
 
 const styles = StyleSheet.create({
@@ -188,7 +195,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "white",
-    paddingTop: 40,
+  },
+  cancelButtonText: {
+    color: "white",
+    fontWeight: "bold",
   },
   message: {
     textAlign: "center",

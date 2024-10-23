@@ -22,6 +22,7 @@ interface ImageData {
 const Cards = () => {
   const [images, setImages] = useState<ImageData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedImageName, setSelectedImageName] = useState("");
 
@@ -29,13 +30,16 @@ const Cards = () => {
     React.useCallback(() => {
       const fetchImages = async () => {
         setLoading(true);
+        setError(null);
         try {
           const response = await axios.get(
             "http://10.0.0.128:5000/images/json"
           );
           setImages(response.data);
+          console.log("Imagens carregadas:", response.data);
         } catch (error) {
           console.error("Erro ao buscar imagens:", error);
+          setError("Erro ao carregar imagens.");
         } finally {
           setLoading(false);
         }
@@ -58,6 +62,14 @@ const Cards = () => {
     return <ActivityIndicator size="large" color="#0000ff" />;
   }
 
+  if (error) {
+    return (
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorText}>{error}</Text>
+      </View>
+    );
+  }
+
   const windowWidth = Dimensions.get("window").width;
   const imageSize = (windowWidth - 40) / 3;
 
@@ -72,6 +84,7 @@ const Cards = () => {
             <Image
               source={{ uri: image.url }}
               style={[styles.image, { width: imageSize, height: imageSize }]}
+              accessibilityLabel={image.filename}
             />
           </TouchableOpacity>
         ))}
@@ -132,6 +145,15 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     color: "blue",
+    fontSize: 16,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  errorText: {
+    color: "red",
     fontSize: 16,
   },
 });
