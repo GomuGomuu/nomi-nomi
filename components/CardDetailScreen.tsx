@@ -35,6 +35,16 @@ const CardDetailScreen: React.FC<CardDetailScreenProps> = ({
     fetchCardDetail();
   }, [apiUrl]);
 
+  const getBaseUrl = (url: string) => {
+    try {
+      const { protocol, host } = new URL(url);
+      return `${protocol}//${host}`;
+    } catch (error) {
+      console.error("Invalid URL:", error);
+      return "";
+    }
+  };
+
   if (loading) {
     return (
       <View style={styles.loader}>
@@ -57,7 +67,7 @@ const CardDetailScreen: React.FC<CardDetailScreenProps> = ({
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {selectedIllustration && (
           <Image
-            source={{ uri: selectedIllustration.external_link }}
+            source={{ uri: `${getBaseUrl(apiUrl)}${selectedIllustration.src}` }}
             style={styles.illustration}
           />
         )}
