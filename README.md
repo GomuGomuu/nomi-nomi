@@ -1,50 +1,54 @@
-# Welcome to your Expo app 👋
+## Nomi-Nomi: Card Recognition App
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+This repository contains the source code for a React Native application called Nomi-Nomi. This app uses Expo and focuses on card recognition functionality.
 
-## Get started
+**Features:**
 
-1. Install dependencies
+* **Camera-based Card Recognition:** The app captures images of cards using the device camera and sends them to a server for recognition.
+* **Card Details Display:**  After recognition, the app displays detailed information about the recognized cards, including name, type, rarity, power, cost, and effects.
+* **Wallet Integration (Placeholder):**  The app has a placeholder feature for adding illustrations to a user's wallet, allowing them to save their favorites.
+* **Connection Checking:** The app allows users to test their connection to the recognition server.
 
+**Getting Started:**
+
+1. **Clone the repository:** 
+   ```bash
+   git clone https://github.com/GomuGomuu/nomi-nomi.git
+   ```
+
+2. **Install dependencies:**
    ```bash
    npm install
    ```
 
-2. Start the app
-
+3. **Start the app:**
    ```bash
-    npx expo start
+   npx expo start
    ```
 
-In the output, you'll find options to open the app in a
+**Development:**
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+* The main application logic is located in the `app` directory.
+* Components are organized within the `components` folder.
+* Constants and hooks are defined in `constants` and `hooks` respectively.
+* `scripts/reset-project.js` provides a way to reset the project to a blank state.
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+**Running the App:**
 
-## Get a fresh project
+You can run the app on a development build, Android emulator, iOS simulator, or Expo Go. Refer to the [Expo documentation](https://docs.expo.dev/) for more details on these options.
 
-When you're ready, run:
+**Dependencies:**
 
-```bash
-npm run reset-project
-```
+* Expo
+* Expo Camera
+* Expo Router
+* Axios
+* Expo Font
+* Expo Image Manipulator
+* React Native Reanimated
+* React Native Gesture Handler
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+**Additional Information:**
 
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+* The app relies on a server-side card recognition API, which is not included in this repository.
+* The "Add to Wallet" feature is a placeholder and requires further implementation.
