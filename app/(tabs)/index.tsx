@@ -15,9 +15,11 @@ import CardListModal from "@/components/CardListModal";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { NativeModules } from "react-native";
 import Reactotron from "reactotron-react-native";
+// MerryEndpoints
+import { MerryEndpoints } from "@constants/Merry";
+
 const { scriptURL } = NativeModules.SourceCode;
 const scriptHostname = scriptURL.split("://")[1].split(":")[0];
-
 if (__DEV__) {
   Reactotron.setAsyncStorageHandler(AsyncStorage)
     .configure({ host: scriptHostname })
@@ -36,11 +38,6 @@ export default function App() {
   const [pingResponse, setPingResponse] = useState<string | null>(null);
   const [recognizedCards, setRecognizedCards] = useState<any[]>([]);
   const [showCardModal, setShowCardModal] = useState(false);
-
-  const apiEndpoint = "http://10.0.0.128:5000/card/recognize";
-  const pingEndpoint = "http://10.0.0.128:5000/ping";
-  const username = "admin";
-  const password = "password";
 
   if (!permission) {
     return <View />;
@@ -123,17 +120,22 @@ export default function App() {
       type: "image/jpeg",
       name: generatePhotoName(),
     };
-    formData.append("file", photo);
+    formData.append("image", photo);
 
     try {
-      const response = await axios.post(apiEndpoint, formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-          Authorization: `Basic ${btoa(`${username}:${password}`)}`,
-        },
-      });
+      console.tron.log(`${MerryEndpoints.RECOGNITION}`);
+      const response = await axios.post(
+        `${MerryEndpoints.RECOGNITION}`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            // Authorization: `Basic ${btoa(`${username}:${password}`)}`,
+          },
+        }
+      );
 
-      setRecognizedCards(response.data.possible_cards);
+      setRecognizedCards(response.data);
       setShowCardModal(true);
     } catch (error) {
       console.error("Error uploading the image:", error);
@@ -147,7 +149,7 @@ export default function App() {
 
   async function checkConnection() {
     try {
-      const response = await axios.get(pingEndpoint);
+      const response = await axios.get(`${MerryEndpoints.PING}`);
       setPingResponse(response.data.message);
     } catch (error) {
       console.error("Error checking the connection:", error);
@@ -186,7 +188,7 @@ export default function App() {
         </Modal>
         <CardListModal
           visible={showCardModal}
-          cards={recognizedCards}
+          data={recognizedCards}
           onClose={() => setShowCardModal(false)}
         />
       </View>

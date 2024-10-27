@@ -1,3 +1,4 @@
+import { MerryEndpoints } from "@constants/Merry";
 import React, { useEffect, useState } from "react";
 import {
   View,
@@ -9,31 +10,79 @@ import {
   ActivityIndicator,
 } from "react-native";
 
-// ... [suas interfaces]
+interface CardData {
+  id: number;
+  name: string;
+  slug: string;
+  is_dom: boolean;
+  cost: number;
+  power: number;
+  counter_value: number;
+  effect: string;
+  type: string;
+  rare: string;
+  trigger: string;
+  op: {
+    id: number;
+    name: string;
+    slug: string;
+  };
+  attribute: string | null;
+  crew: Array<{
+    id: number;
+    name: string;
+    slug: string;
+  }>;
+  deck_color: Array<{
+    id: number;
+    name: string;
+  }>;
+  side_effects: Array<{
+    id: number;
+    name: string;
+    slug: string;
+  }>;
+}
+
+interface Illustration {
+  code: string;
+  similarity: number;
+  data: {
+    id: number;
+    src: string;
+  };
+}
+
+interface Card {
+  slug: string;
+  similarity: number;
+  illustrations: Illustration[];
+  data: CardData;
+}
+
+interface CardDetailScreenProps {
+  cardDetail: Card;
+  selectedIllustrationId: string;
+  apiBaseUrl: string;
+  onClose: () => void;
+}
 
 const CardDetailScreen: React.FC<CardDetailScreenProps> = ({
-  apiUrl,
+  cardDetail,
   selectedIllustrationId,
+  apiBaseUrl,
   onClose,
 }) => {
-  const [cardDetail, setCardDetail] = useState<CardDetail | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchCardDetail = async () => {
-      try {
-        const response = await fetch(apiUrl);
-        const data: CardDetail = await response.json();
-        setCardDetail(data);
-      } catch (error) {
-        console.error("Error fetching card details:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+    // Simulação de carregamento, você pode ajustar conforme necessário
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 500); // Simula um tempo de carregamento
 
-    fetchCardDetail();
-  }, [apiUrl]);
+    return () => clearTimeout(timer); // Limpa o timer ao desmontar
+  }, []);
 
   const getBaseUrl = (url: string) => {
     try {
@@ -67,33 +116,35 @@ const CardDetailScreen: React.FC<CardDetailScreenProps> = ({
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {selectedIllustration && (
           <Image
-            source={{ uri: `${getBaseUrl(apiUrl)}${selectedIllustration.src}` }}
+            source={{
+              uri: `${MerryEndpoints.BASE_URL}${selectedIllustration.data.src}`,
+            }}
             style={styles.illustration}
           />
         )}
-        <Text style={styles.title}>{cardDetail.name}</Text>
-        <Text style={styles.subtitle}>Type: {cardDetail.type}</Text>
-        <Text style={styles.subtitle}>Rarity: {cardDetail.rare}</Text>
-        <Text style={styles.subtitle}>Power: {cardDetail.power}</Text>
-        <Text style={styles.subtitle}>Cost: {cardDetail.cost}</Text>
+        <Text style={styles.title}>{cardDetail.data.name}</Text>
+        <Text style={styles.subtitle}>Type: {cardDetail.data.type}</Text>
+        <Text style={styles.subtitle}>Rarity: {cardDetail.data.rare}</Text>
+        <Text style={styles.subtitle}>Power: {cardDetail.data.power}</Text>
+        <Text style={styles.subtitle}>Cost: {cardDetail.data.cost}</Text>
         <Text style={styles.subtitle}>
-          Counter Value: {cardDetail.counter_value}
+          Counter Value: {cardDetail.data.counter_value}
         </Text>
         <Text style={styles.subtitle}>
-          Attribute: {cardDetail.attribute || "N/A"}
+          Attribute: {cardDetail.data.attribute || "N/A"}
         </Text>
         <Text style={styles.subtitle}>
-          Is DOM: {cardDetail.is_dom ? "Yes" : "No"}
+          Is DOM: {cardDetail.data.is_dom ? "Yes" : "No"}
         </Text>
         <Text style={styles.subtitle}>
-          Trigger: {cardDetail.trigger || "None"}
+          Trigger: {cardDetail.data.trigger || "None"}
         </Text>
-        <Text style={styles.effect}>Effect: {cardDetail.effect}</Text>
+        <Text style={styles.effect}>Effect: {cardDetail.data.effect}</Text>
 
-        {cardDetail.crew.length > 0 && (
+        {cardDetail.data.crew?.length > 0 && (
           <View>
             <Text style={styles.subtitle}>Crew:</Text>
-            {cardDetail.crew.map((crew) => (
+            {cardDetail.data.crew.map((crew) => (
               <Text key={crew.id} style={styles.listItem}>
                 - {crew.name}
               </Text>
@@ -101,10 +152,10 @@ const CardDetailScreen: React.FC<CardDetailScreenProps> = ({
           </View>
         )}
 
-        {cardDetail.deck_color.length > 0 && (
+        {cardDetail.data.deck_color?.length > 0 && (
           <View>
             <Text style={styles.subtitle}>Deck Color:</Text>
-            {cardDetail.deck_color.map((color) => (
+            {cardDetail.data.deck_color.map((color) => (
               <Text key={color.id} style={styles.listItem}>
                 - {color.name}
               </Text>
@@ -113,10 +164,10 @@ const CardDetailScreen: React.FC<CardDetailScreenProps> = ({
         )}
 
         <Text style={styles.subtitle}>Side Effects:</Text>
-        {cardDetail.side_effects.length > 0 ? (
-          cardDetail.side_effects.map((effect, index) => (
+        {cardDetail.data.side_effects?.length > 0 ? (
+          cardDetail.data.side_effects.map((effect, index) => (
             <Text key={index} style={styles.listItem}>
-              - {effect}
+              - {effect.name}
             </Text>
           ))
         ) : (
@@ -176,6 +227,7 @@ const styles = StyleSheet.create({
     height: 400, // Ajuste o tamanho conforme necessário
     marginBottom: 20,
     alignSelf: "center",
+    borderRadius: 10,
   },
   title: {
     fontSize: 24,
