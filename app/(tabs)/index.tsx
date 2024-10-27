@@ -12,6 +12,20 @@ import {
 import axios from "axios";
 import * as ImageManipulator from "expo-image-manipulator";
 import CardListModal from "@/components/CardListModal";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { NativeModules } from "react-native";
+import Reactotron from "reactotron-react-native";
+const { scriptURL } = NativeModules.SourceCode;
+const scriptHostname = scriptURL.split("://")[1].split(":")[0];
+
+if (__DEV__) {
+  Reactotron.setAsyncStorageHandler(AsyncStorage)
+    .configure({ host: scriptHostname })
+    .useReactNative()
+    .connect();
+  console.tron = Reactotron;
+  Reactotron.clear();
+}
 
 export default function App() {
   const [facing, setFacing] = useState<CameraType>("back");
