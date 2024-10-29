@@ -48,6 +48,7 @@ interface Illustration {
   code: string;
   similarity: number;
   data: {
+    price: number;
     id: number;
     src: string;
   };
@@ -123,6 +124,9 @@ const CardDetailScreen: React.FC<CardDetailScreenProps> = ({
           />
         )}
         <Text style={styles.title}>{cardDetail.data.name}</Text>
+        <Text style={styles.subtitle}>
+          Price: R$: {selectedIllustration?.data.price}
+        </Text>
         <Text style={styles.subtitle}>Type: {cardDetail.data.type}</Text>
         <Text style={styles.subtitle}>Rarity: {cardDetail.data.rare}</Text>
         <Text style={styles.subtitle}>Power: {cardDetail.data.power}</Text>

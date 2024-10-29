@@ -49,6 +49,7 @@ interface Illustration {
   code: string;
   similarity: number;
   data: {
+    price: number;
     id: number;
     src: string;
   };
