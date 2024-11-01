@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from "react-native";
+import { MaterialIcons } from "@expo/vector-icons";
 
 interface CardData {
   id: number;
@@ -64,35 +65,23 @@ interface Card {
 interface CardDetailScreenProps {
   cardDetail: Card;
   selectedIllustrationId: string;
-  apiBaseUrl: string;
   onClose: () => void;
 }
 
 const CardDetailScreen: React.FC<CardDetailScreenProps> = ({
   cardDetail,
   selectedIllustrationId,
-  apiBaseUrl,
   onClose,
 }) => {
   const [loading, setLoading] = useState(true);
+  const [imageError, setImageError] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => {
       setLoading(false);
     }, 500);
-
     return () => clearTimeout(timer);
   }, []);
-
-  const getBaseUrl = (url: string) => {
-    try {
-      const { protocol, host } = new URL(url);
-      return `${protocol}//${host}`;
-    } catch (error) {
-      console.error("Invalid URL:", error);
-      return "";
-    }
-  };
 
   if (loading) {
     return (
@@ -110,147 +99,164 @@ const CardDetailScreen: React.FC<CardDetailScreenProps> = ({
     (illustration) => illustration.code === selectedIllustrationId
   );
 
+  const imageUrl = selectedIllustration
+    ? `${MerryEndpoints.BASE_URL}${selectedIllustration.data.src}`
+    : null;
+
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.bigIllustrationContainer}>
-          {selectedIllustration && (
+        <View style={styles.card}>
+          <View style={styles.imageContainer}>
             <Image
-              source={{
-                uri: `${MerryEndpoints.BASE_URL}${selectedIllustration.data.src}`,
-              }}
+              source={
+                imageUrl
+                  ? { uri: imageUrl }
+                  : require("@assets/images/card-frame.png")
+              }
               style={styles.bigIllustration}
+              onError={() => setImageError(true)}
             />
-          )}
-        </View>
-
-        <Text style={styles.title}>{cardDetail.data.name}</Text>
-        <View style={styles.detailsContainer}>
-          <Text style={styles.subtitle}>
-            Price: R$: {selectedIllustration?.data.price}
-          </Text>
-          <Text style={styles.subtitle}>Type: {cardDetail.data.type}</Text>
-          <Text style={styles.subtitle}>Rarity: {cardDetail.data.rare}</Text>
-          <Text style={styles.subtitle}>Power: {cardDetail.data.power}</Text>
-          <Text style={styles.subtitle}>Cost: {cardDetail.data.cost}</Text>
-          <Text style={styles.subtitle}>
-            Counter Value: {cardDetail.data.counter_value}
-          </Text>
-          <Text style={styles.subtitle}>
-            Attribute: {cardDetail.data.attribute || "N/A"}
-          </Text>
-          <Text style={styles.subtitle}>
-            Is DOM: {cardDetail.data.is_dom ? "Yes" : "No"}
-          </Text>
-          <Text style={styles.subtitle}>
-            Trigger: {cardDetail.data.trigger || "None"}
-          </Text>
-          <Text style={styles.effect}>Effect: {cardDetail.data.effect}</Text>
-        </View>
-
-        {cardDetail.data.crew?.length > 0 && (
-          <View>
-            <Text style={styles.subtitle}>Crew:</Text>
-            {cardDetail.data.crew.map((crew) => (
-              <Text key={crew.id} style={styles.listItem}>
-                - {crew.name}
-              </Text>
-            ))}
           </View>
-        )}
 
-        {cardDetail.data.deck_color?.length > 0 && (
-          <View>
-            <Text style={styles.subtitle}>Deck Color:</Text>
-            {cardDetail.data.deck_color.map((color) => (
-              <Text key={color.id} style={styles.listItem}>
-                - {color.name}
-              </Text>
-            ))}
-          </View>
-        )}
+          <Text style={styles.title}>{cardDetail.data.name}</Text>
 
-        <Text style={styles.subtitle}>Side Effects:</Text>
-        {cardDetail.data.side_effects?.length > 0 ? (
-          cardDetail.data.side_effects.map((effect, index) => (
-            <Text key={index} style={styles.listItem}>
-              - {effect.name}
+          <View style={styles.detailsContainer}>
+            {renderDetailRow("Price", `R$ ${selectedIllustration?.data.price}`)}
+            {renderDetailRow("Type", cardDetail.data.type)}
+            {renderDetailRow("Rarity", cardDetail.data.rare)}
+            {renderDetailRow("Power", cardDetail.data.power.toString())}
+            {renderDetailRow("Cost", cardDetail.data.cost.toString())}
+            {renderDetailRow(
+              "Counter Value",
+              cardDetail.data.counter_value.toString()
+            )}
+            {renderDetailRow("Attribute", cardDetail.data.attribute || "N/A")}
+            {renderDetailRow("Is DOM", cardDetail.data.is_dom ? "Yes" : "No")}
+            {renderDetailRow("Trigger", cardDetail.data.trigger || "None")}
+            <Text style={styles.effect}>
+              <Text style={styles.subtitle}>Effect:</Text>
+              {"\n"}
+              {cardDetail.data.effect}
             </Text>
-          ))
-        ) : (
-          <Text style={styles.listItem}>None</Text>
-        )}
+          </View>
+
+          <View style={styles.infoContainer}>
+            {cardDetail.data.crew?.length > 0 && (
+              <View>
+                <Text style={styles.subtitle}>Crew:</Text>
+                {cardDetail.data.crew.map((crew) => (
+                  <Text key={crew.id} style={styles.listItem}>
+                    - {crew.name}
+                  </Text>
+                ))}
+              </View>
+            )}
+
+            {cardDetail.data.deck_color?.length > 0 && (
+              <View>
+                <Text style={styles.subtitle}>Deck Color:</Text>
+                {cardDetail.data.deck_color.map((color) => (
+                  <Text key={color.id} style={styles.listItem}>
+                    - {color.name}
+                  </Text>
+                ))}
+              </View>
+            )}
+
+            <Text style={styles.subtitle}>Side Effects:</Text>
+            {cardDetail.data.side_effects?.length > 0 ? (
+              cardDetail.data.side_effects.map((effect, index) => (
+                <Text key={index} style={styles.listItem}>
+                  - {effect.name}
+                </Text>
+              ))
+            ) : (
+              <Text style={styles.listItem}>None</Text>
+            )}
+          </View>
+        </View>
       </ScrollView>
 
       <View style={styles.buttonContainer}>
-        <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-          <Text style={styles.closeButtonText}>Close</Text>
-        </TouchableOpacity>
         <TouchableOpacity
           onPress={() => alert("Illustration added to wallet!")}
           style={styles.addButton}
         >
-          <Text style={styles.addButtonText}>Add to Wallet</Text>
+          <MaterialIcons name="wallet" size={24} color="white" />
+          <Text style={styles.addButtonText}> Add to Wallet</Text>
         </TouchableOpacity>
       </View>
     </View>
   );
 };
 
+const renderDetailRow = (label: string, value: string) => (
+  <View style={styles.detailRow}>
+    <Text style={styles.detailLabel}>{label}:</Text>
+    <Text style={styles.detailValue}>{value}</Text>
+  </View>
+);
+
 const styles = StyleSheet.create({
-  buttonContainer: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: "black",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 10,
-  },
-  addButton: {
-    width: "48%",
-    padding: 10,
-    backgroundColor: "#44ff44",
-    borderRadius: 5,
-    alignSelf: "center",
-  },
-  addButtonText: {
-    color: "white",
-    textAlign: "center",
-  },
   container: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.9)",
-    padding: 20,
+    paddingTop: 20,
   },
   scrollContent: {
     alignItems: "flex-start",
     paddingBottom: 80,
   },
-  bigIllustrationContainer: {
-    alignItems: "center", // Centraliza a ilustração grande
+  card: {
+    width: "100%",
+    backgroundColor: "#222",
+    borderRadius: 10,
+    padding: 20,
+    marginVertical: 10,
+    alignSelf: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.5,
+    shadowRadius: 4,
+  },
+  imageContainer: {
+    alignItems: "center",
     marginBottom: 20,
   },
   bigIllustration: {
-    width: 250, // Ajuste o tamanho conforme necessário
-    height: 350, // Ajuste o tamanho conforme necessário
-    borderRadius: 10,
+    width: "75%",
+    height: 350,
+    borderRadius: 0,
   },
   title: {
     fontSize: 24,
     fontWeight: "bold",
     color: "#ffffff",
     textAlign: "center",
-    marginBottom: 10,
+    marginVertical: 10,
   },
   detailsContainer: {
-    width: "100%", // Largura total para o container dos detalhes
+    width: "100%",
+    marginBottom: 20,
+  },
+  detailRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginVertical: 5,
+  },
+  detailLabel: {
+    fontSize: 16,
+    color: "#ffffff",
+    fontWeight: "bold",
+  },
+  detailValue: {
+    fontSize: 16,
+    color: "#cccccc",
   },
   subtitle: {
     fontSize: 18,
+    fontWeight: "bold",
     color: "#ffffff",
-    marginVertical: 5,
   },
   effect: {
     color: "#ffffff",
@@ -260,16 +266,27 @@ const styles = StyleSheet.create({
     color: "#cccccc",
     marginLeft: 10,
   },
-  closeButton: {
-    width: "48%",
-    padding: 10,
-    backgroundColor: "#ff4444",
-    borderRadius: 5,
-    alignSelf: "center",
+  infoContainer: {},
+  buttonContainer: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    flexDirection: "row",
+    justifyContent: "center",
+    paddingVertical: 10,
   },
-  closeButtonText: {
+  addButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 10,
+    backgroundColor: "#28a745",
+    borderRadius: 5,
+  },
+  addButtonText: {
     color: "white",
     textAlign: "center",
+    marginLeft: 5,
   },
   loader: {
     flex: 1,

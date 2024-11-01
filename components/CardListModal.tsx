@@ -1,14 +1,15 @@
-import { MerryEndpoints } from "@constants/Merry";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
+  Modal,
   Image,
+  TouchableOpacity,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
-  ActivityIndicator,
 } from "react-native";
+import CardDetailScreen from "./CardDetailScreen";
+import { MerryEndpoints } from "@constants/Merry";
 
 interface CardData {
   id: number;
@@ -61,209 +62,318 @@ interface Card {
   data: CardData;
 }
 
-interface CardDetailScreenProps {
-  cardDetail: Card;
-  selectedIllustrationId: string;
-  apiBaseUrl: string;
+interface CardListModalProps {
+  visible: boolean;
   onClose: () => void;
+  data: Card[];
 }
 
-const CardDetailScreen: React.FC<CardDetailScreenProps> = ({
-  cardDetail,
-  selectedIllustrationId,
-  apiBaseUrl,
+const CardListModal: React.FC<CardListModalProps> = ({
+  visible,
   onClose,
+  data,
 }) => {
-  const [loading, setLoading] = useState(true);
+  const [selectedCard, setSelectedCard] = useState<Card | null>(null);
+  const [showDetailScreen, setShowDetailScreen] = useState<boolean>(false);
+  const [selectedIllustrationId, setSelectedIllustrationId] = useState<
+    string | null
+  >(null);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 500);
+  const handleIllustrationPress = (illustration: Illustration) => {
+    setSelectedIllustrationId(illustration.code);
+    setShowDetailScreen(true);
+  };
 
-    return () => clearTimeout(timer);
-  }, []);
+  const handleCardPress = (card: Card) => {
+    setSelectedCard(card);
+    setShowDetailScreen(false);
+  };
 
-  const getBaseUrl = (url: string) => {
-    try {
-      const { protocol, host } = new URL(url);
-      return `${protocol}//${host}`;
-    } catch (error) {
-      console.error("Invalid URL:", error);
-      return "";
+  const handleBackPress = () => {
+    if (showDetailScreen) {
+      setShowDetailScreen(false);
+      setSelectedIllustrationId(null);
+    } else if (selectedCard) {
+      setSelectedCard(null);
+    } else {
+      onClose();
     }
   };
 
-  if (loading) {
-    return (
-      <View style={styles.loader}>
-        <ActivityIndicator size="large" color="#ffffff" />
-      </View>
-    );
-  }
-
-  if (!cardDetail) {
-    return null;
-  }
-
-  const selectedIllustration = cardDetail.illustrations.find(
-    (illustration) => illustration.code === selectedIllustrationId
-  );
-
   return (
-    <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {selectedIllustration && (
-          <Image
-            source={{
-              uri: `${MerryEndpoints.BASE_URL}${selectedIllustration.data.src}`,
-            }}
-            style={styles.illustration}
-          />
-        )}
-        <Text style={styles.title}>{cardDetail.data.name}</Text>
-        <Text style={styles.subtitle}>
-          Price: R$: {selectedIllustration?.data.price}
-        </Text>
-        <Text style={styles.subtitle}>Type: {cardDetail.data.type}</Text>
-        <Text style={styles.subtitle}>Rarity: {cardDetail.data.rare}</Text>
-        <Text style={styles.subtitle}>Power: {cardDetail.data.power}</Text>
-        <Text style={styles.subtitle}>Cost: {cardDetail.data.cost}</Text>
-        <Text style={styles.subtitle}>
-          Counter Value: {cardDetail.data.counter_value}
-        </Text>
-        <Text style={styles.subtitle}>
-          Attribute: {cardDetail.data.attribute || "N/A"}
-        </Text>
-        <Text style={styles.subtitle}>
-          Is DOM: {cardDetail.data.is_dom ? "Yes" : "No"}
-        </Text>
-        <Text style={styles.subtitle}>
-          Trigger: {cardDetail.data.trigger || "None"}
-        </Text>
-        <Text style={styles.effect}>Effect: {cardDetail.data.effect}</Text>
-
-        {cardDetail.data.crew?.length > 0 && (
-          <View>
-            <Text style={styles.subtitle}>Crew:</Text>
-            {cardDetail.data.crew.map((crew) => (
-              <Text key={crew.id} style={styles.listItem}>
-                - {crew.name}
-              </Text>
-            ))}
-          </View>
-        )}
-
-        {cardDetail.data.deck_color?.length > 0 && (
-          <View>
-            <Text style={styles.subtitle}>Deck Color:</Text>
-            {cardDetail.data.deck_color.map((color) => (
-              <Text key={color.id} style={styles.listItem}>
-                - {color.name}
-              </Text>
-            ))}
-          </View>
-        )}
-
-        <Text style={styles.subtitle}>Side Effects:</Text>
-        {cardDetail.data.side_effects?.length > 0 ? (
-          cardDetail.data.side_effects.map((effect, index) => (
-            <Text key={index} style={styles.listItem}>
-              - {effect.name}
-            </Text>
-          ))
+    <Modal visible={visible} transparent animationType="slide">
+      <View style={styles.modalContainer}>
+        {!showDetailScreen ? (
+          !selectedCard ? (
+            <ScrollView contentContainerStyle={styles.cardList}>
+              {data.length > 0 && (
+                <TouchableOpacity
+                  onPress={() => handleCardPress(data[0])}
+                  style={styles.bigCardItem}
+                >
+                  <Image
+                    source={{
+                      uri: `${MerryEndpoints.BASE_URL}${data[0].illustrations[0].data.src}`,
+                    }}
+                    style={styles.bigCardImage}
+                  />
+                  <Text style={styles.cardName}>{data[0].data.name}</Text>
+                  <Text style={styles.confidence}>
+                    Similarity: {data[0].similarity.toFixed(2)}
+                  </Text>
+                </TouchableOpacity>
+              )}
+              <View style={styles.gallery}>
+                {data.slice(1).map((recognitionItem, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    onPress={() => handleCardPress(recognitionItem)}
+                    style={styles.cardItem}
+                  >
+                    <Image
+                      source={{
+                        uri: `${MerryEndpoints.BASE_URL}${recognitionItem.illustrations[0].data.src}`,
+                      }}
+                      style={styles.cardImage}
+                    />
+                    <Text style={styles.cardName}>
+                      {recognitionItem.data.name}
+                    </Text>
+                    <Text style={styles.confidence}>
+                      Similarity: {recognitionItem.similarity.toFixed(2)}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </ScrollView>
+          ) : (
+            <View style={styles.cardDetailContainer}>
+              <ScrollView style={styles.cardDetailContainer}>
+                <TouchableOpacity
+                  onPress={() => {
+                    setSelectedIllustrationId(
+                      selectedCard.illustrations[0].code
+                    );
+                    setShowDetailScreen(true);
+                  }}
+                  style={styles.cardDetailTouchable}
+                >
+                  <Text style={styles.cardDetailName}>
+                    {selectedCard.data.name}
+                  </Text>
+                  <Image
+                    source={{
+                      uri: `${MerryEndpoints.BASE_URL}${selectedCard.illustrations[0].data.src}`,
+                    }}
+                    style={styles.cardDetailImage}
+                  />
+                  <Text style={styles.cardDescription}>
+                    {selectedCard.data.slug}
+                    {"\n"}
+                    Similarity: {selectedCard.similarity.toFixed(2)}
+                  </Text>
+                </TouchableOpacity>
+                <ScrollView contentContainerStyle={styles.scrollContainer}>
+                  {selectedCard.illustrations
+                    .slice(1)
+                    .map((illustration, index) => (
+                      <TouchableOpacity
+                        key={index}
+                        onPress={() => handleIllustrationPress(illustration)}
+                        style={styles.touchable}
+                      >
+                        <Image
+                          source={{
+                            uri: `${MerryEndpoints.BASE_URL}${illustration.data.src}`,
+                          }}
+                          style={styles.detailImage}
+                        />
+                        <Text style={styles.illustrationCode}>
+                          {illustration.code}
+                        </Text>
+                        <Text style={styles.similarityText}>
+                          Similarity: {illustration.similarity.toFixed(2)}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                </ScrollView>
+              </ScrollView>
+            </View>
+          )
         ) : (
-          <Text style={styles.listItem}>None</Text>
+          selectedCard && (
+            <CardDetailScreen
+              cardDetail={selectedCard}
+              selectedIllustrationId={selectedIllustrationId!}
+              onClose={() => {
+                setShowDetailScreen(false);
+                setSelectedCard(null);
+                setSelectedIllustrationId(null);
+              }}
+            />
+          )
         )}
-      </ScrollView>
-
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-          <Text style={styles.closeButtonText}>Close</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() => alert("Illustration added to wallet!")}
-          style={styles.addButton}
-        >
-          <Text style={styles.addButtonText}>Add to Wallet</Text>
+        <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
+          <Text style={styles.backButtonText}>
+            {showDetailScreen || selectedCard ? "Back" : "Close"}
+          </Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </Modal>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  modalContainer: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.9)",
     padding: 20,
   },
-  scrollContent: {
-    alignItems: "flex-start",
-    paddingBottom: 80,
+  cardList: {
+    alignItems: "center",
+    paddingBottom: 20,
   },
-  illustration: {
-    width: "100%",
-    height: 300,
+  bigCardItem: {
+    width: "70%",
+    backgroundColor: "#333",
+    borderRadius: 10,
     marginBottom: 20,
+    padding: 15,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.8,
+    shadowRadius: 2,
+    elevation: 5,
+  },
+  bigCardImage: {
+    width: "80%",
+    height: 250,
     borderRadius: 10,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#ffffff",
+  gallery: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    width: "100%",
   },
-  subtitle: {
-    fontSize: 18,
-    color: "#ffffff",
-    marginVertical: 5,
+  cardItem: {
+    width: "48%",
+    backgroundColor: "#222",
+    borderRadius: 10,
+    marginBottom: 15,
+    padding: 10,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.8,
+    shadowRadius: 2,
+    elevation: 5,
+    alignItems: "center",
+  },
+  cardImage: {
+    width: "50%",
+    height: 110,
+    borderRadius: 5,
+  },
+  cardName: {
+    color: "white",
+    marginTop: 5,
+    fontWeight: "bold",
+    textAlign: "center",
+    fontSize: 14,
+    marginBottom: 5,
+  },
+  confidence: {
+    color: "white",
+    fontSize: 12,
+  },
+  cardDetailContainer: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.9)",
+    borderRadius: 10,
+  },
+  cardDetailTouchable: {
+    width: "100%",
+    alignItems: "center",
+  },
+  cardDetailImage: {
+    width: "77%",
+    height: 400,
+    marginBottom: 15,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.5,
+    shadowRadius: 3,
+    elevation: 5,
+  },
+  cardDetailName: {
+    color: "white",
+    fontSize: 35,
+    fontWeight: "bold",
+    textAlign: "center",
+    marginBottom: 10,
+  },
+  scrollContainer: {
+    flexGrow: 1,
+    justifyContent: "center",
+  },
+  backButton: {
+    marginTop: 20,
+    backgroundColor: "#444",
+    borderRadius: 5,
+    padding: 10,
+    alignItems: "center",
+  },
+  backButtonText: {
+    color: "white",
+    fontWeight: "bold",
+  },
+  touchable: {
+    alignItems: "center",
+    margin: 5,
+  },
+  detailImage: {
+    width: "39%",
+    height: 200,
+    margin: 10,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.5,
+    shadowRadius: 3,
+    elevation: 5,
+  },
+  cardDescription: {
+    color: "white",
+    fontSize: 20,
+    textAlign: "center",
   },
   effect: {
-    color: "#ffffff",
-    marginVertical: 5,
-  },
-  listItem: {
-    color: "#cccccc",
-    marginLeft: 10,
-  },
-  buttonContainer: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: "black",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 10,
-  },
-  addButton: {
-    width: "48%",
-    padding: 10,
-    backgroundColor: "#44ff44",
-    borderRadius: 5,
-    alignSelf: "center",
-  },
-  addButtonText: {
     color: "white",
+    fontSize: 12,
     textAlign: "center",
   },
-  closeButton: {
-    width: "48%",
-    padding: 10,
-    backgroundColor: "#ff4444",
-    borderRadius: 5,
-    alignSelf: "center",
-  },
-  closeButtonText: {
+  illustrationCode: {
     color: "white",
+    fontSize: 12,
     textAlign: "center",
   },
-  loader: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.9)",
+  similarityText: {
+    color: "white",
+    fontSize: 12,
+    textAlign: "center",
   },
 });
 
-export default CardDetailScreen;
+export default CardListModal;
