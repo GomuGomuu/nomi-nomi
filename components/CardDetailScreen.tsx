@@ -77,12 +77,11 @@ const CardDetailScreen: React.FC<CardDetailScreenProps> = ({
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulação de carregamento, você pode ajustar conforme necessário
     const timer = setTimeout(() => {
       setLoading(false);
-    }, 500); // Simula um tempo de carregamento
+    }, 500);
 
-    return () => clearTimeout(timer); // Limpa o timer ao desmontar
+    return () => clearTimeout(timer);
   }, []);
 
   const getBaseUrl = (url: string) => {
@@ -104,10 +103,9 @@ const CardDetailScreen: React.FC<CardDetailScreenProps> = ({
   }
 
   if (!cardDetail) {
-    return null; // Se não houver dados do card, não renderiza nada
+    return null;
   }
 
-  // Encontrar a ilustração selecionada
   const selectedIllustration = cardDetail.illustrations.find(
     (illustration) => illustration.code === selectedIllustrationId
   );
@@ -115,35 +113,40 @@ const CardDetailScreen: React.FC<CardDetailScreenProps> = ({
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {selectedIllustration && (
-          <Image
-            source={{
-              uri: `${MerryEndpoints.BASE_URL}${selectedIllustration.data.src}`,
-            }}
-            style={styles.illustration}
-          />
-        )}
+        <View style={styles.bigIllustrationContainer}>
+          {selectedIllustration && (
+            <Image
+              source={{
+                uri: `${MerryEndpoints.BASE_URL}${selectedIllustration.data.src}`,
+              }}
+              style={styles.bigIllustration}
+            />
+          )}
+        </View>
+
         <Text style={styles.title}>{cardDetail.data.name}</Text>
-        <Text style={styles.subtitle}>
-          Price: R$: {selectedIllustration?.data.price}
-        </Text>
-        <Text style={styles.subtitle}>Type: {cardDetail.data.type}</Text>
-        <Text style={styles.subtitle}>Rarity: {cardDetail.data.rare}</Text>
-        <Text style={styles.subtitle}>Power: {cardDetail.data.power}</Text>
-        <Text style={styles.subtitle}>Cost: {cardDetail.data.cost}</Text>
-        <Text style={styles.subtitle}>
-          Counter Value: {cardDetail.data.counter_value}
-        </Text>
-        <Text style={styles.subtitle}>
-          Attribute: {cardDetail.data.attribute || "N/A"}
-        </Text>
-        <Text style={styles.subtitle}>
-          Is DOM: {cardDetail.data.is_dom ? "Yes" : "No"}
-        </Text>
-        <Text style={styles.subtitle}>
-          Trigger: {cardDetail.data.trigger || "None"}
-        </Text>
-        <Text style={styles.effect}>Effect: {cardDetail.data.effect}</Text>
+        <View style={styles.detailsContainer}>
+          <Text style={styles.subtitle}>
+            Price: R$: {selectedIllustration?.data.price}
+          </Text>
+          <Text style={styles.subtitle}>Type: {cardDetail.data.type}</Text>
+          <Text style={styles.subtitle}>Rarity: {cardDetail.data.rare}</Text>
+          <Text style={styles.subtitle}>Power: {cardDetail.data.power}</Text>
+          <Text style={styles.subtitle}>Cost: {cardDetail.data.cost}</Text>
+          <Text style={styles.subtitle}>
+            Counter Value: {cardDetail.data.counter_value}
+          </Text>
+          <Text style={styles.subtitle}>
+            Attribute: {cardDetail.data.attribute || "N/A"}
+          </Text>
+          <Text style={styles.subtitle}>
+            Is DOM: {cardDetail.data.is_dom ? "Yes" : "No"}
+          </Text>
+          <Text style={styles.subtitle}>
+            Trigger: {cardDetail.data.trigger || "None"}
+          </Text>
+          <Text style={styles.effect}>Effect: {cardDetail.data.effect}</Text>
+        </View>
 
         {cardDetail.data.crew?.length > 0 && (
           <View>
@@ -179,7 +182,6 @@ const CardDetailScreen: React.FC<CardDetailScreenProps> = ({
         )}
       </ScrollView>
 
-      {/* Caixa preta com os botões */}
       <View style={styles.buttonContainer}>
         <TouchableOpacity onPress={onClose} style={styles.closeButton}>
           <Text style={styles.closeButtonText}>Close</Text>
@@ -202,12 +204,12 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: "black",
-    flexDirection: "row", // Organiza os botões em linha
-    justifyContent: "space-between", // Espaçamento entre os botões
+    flexDirection: "row",
+    justifyContent: "space-between",
     paddingVertical: 10,
   },
   addButton: {
-    width: "48%", // Ajusta a largura do botão para ocupar a metade
+    width: "48%",
     padding: 10,
     backgroundColor: "#44ff44",
     borderRadius: 5,
@@ -224,19 +226,26 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     alignItems: "flex-start",
-    paddingBottom: 80, // Espaço para o botão de fechar
+    paddingBottom: 80,
   },
-  illustration: {
-    width: 300, // Ajuste o tamanho conforme necessário
-    height: 400, // Ajuste o tamanho conforme necessário
+  bigIllustrationContainer: {
+    alignItems: "center", // Centraliza a ilustração grande
     marginBottom: 20,
-    alignSelf: "center",
+  },
+  bigIllustration: {
+    width: 250, // Ajuste o tamanho conforme necessário
+    height: 350, // Ajuste o tamanho conforme necessário
     borderRadius: 10,
   },
   title: {
     fontSize: 24,
     fontWeight: "bold",
     color: "#ffffff",
+    textAlign: "center",
+    marginBottom: 10,
+  },
+  detailsContainer: {
+    width: "100%", // Largura total para o container dos detalhes
   },
   subtitle: {
     fontSize: 18,
@@ -252,7 +261,7 @@ const styles = StyleSheet.create({
     marginLeft: 10,
   },
   closeButton: {
-    width: "48%", // Ajusta a largura do botão para ocupar a metade
+    width: "48%",
     padding: 10,
     backgroundColor: "#ff4444",
     borderRadius: 5,

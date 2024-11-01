@@ -1,13 +1,18 @@
-import { CameraView, CameraType, useCameraPermissions } from "expo-camera";
+import {
+  CameraView,
+  CameraType,
+  FlashMode,
+  useCameraPermissions,
+} from "expo-camera";
 import { useState, useRef } from "react";
 import {
-  Button,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
   Modal,
   ActivityIndicator,
+  Image,
 } from "react-native";
 import axios from "axios";
 import * as ImageManipulator from "expo-image-manipulator";
@@ -15,8 +20,8 @@ import CardListModal from "@/components/CardListModal";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { NativeModules } from "react-native";
 import Reactotron from "reactotron-react-native";
-// MerryEndpoints
 import { MerryEndpoints } from "@constants/Merry";
+import { MaterialIcons } from "@expo/vector-icons";
 
 const { scriptURL } = NativeModules.SourceCode;
 const scriptHostname = scriptURL.split("://")[1].split(":")[0];
@@ -31,25 +36,31 @@ if (__DEV__) {
 
 export default function App() {
   const [facing, setFacing] = useState<CameraType>("back");
+  const [flash, setFlash] = useState<FlashMode>("off");
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView | null>(null);
   const [loading, setLoading] = useState(false);
-  const [uploadCanceled, setUploadCanceled] = useState(false);
   const [pingResponse, setPingResponse] = useState<string | null>(null);
   const [recognizedCards, setRecognizedCards] = useState<any[]>([]);
   const [showCardModal, setShowCardModal] = useState(false);
 
-  if (!permission) {
-    return <View />;
+  function generatePhotoName() {
+    return `photo_${new Date().toISOString().replace(/[:.]/g, "-")}.jpg`;
   }
 
+  if (!permission) return <View />;
   if (!permission.granted) {
     return (
       <View style={styles.container}>
         <Text style={styles.message}>
           We need your permission to show the camera
         </Text>
-        <Button onPress={requestPermission} title="Grant Permission" />
+        <TouchableOpacity
+          style={styles.permissionButton}
+          onPress={requestPermission}
+        >
+          <Text style={styles.text}>Grant Permission</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -58,12 +69,15 @@ export default function App() {
     setFacing((current) => (current === "back" ? "front" : "back"));
   }
 
+  function toggleFlash() {
+    setFlash((current) => (current === "off" ? "on" : "off"));
+  }
+
   async function takePicture() {
     if (cameraRef.current) {
       const photo = await cameraRef.current.takePictureAsync();
       if (photo) {
         setLoading(true);
-        setUploadCanceled(false);
         await cropImage(photo.uri);
       }
     }
@@ -72,40 +86,26 @@ export default function App() {
   async function cropImage(uri: string) {
     try {
       const image = await ImageManipulator.manipulateAsync(uri, []);
-      const originalWidth = image.width;
-      const originalHeight = image.height;
-
-      const cropWidth = originalWidth * 0.62;
-      const cropHeight = originalHeight * 0.65;
-
-      const originX = (originalWidth - cropWidth) / 2;
-      const originY = (originalHeight - cropHeight) / 2;
-
-      const result = await ImageManipulator.manipulateAsync(uri, [
-        {
-          crop: {
-            originX: originX,
-            originY: originY,
-            width: cropWidth,
-            height: cropHeight,
-          },
-        },
+      const resizedImage = await ImageManipulator.manipulateAsync(uri, [
+        { resize: { width: 600, height: 600 * (image.height / image.width) } },
       ]);
 
-      const fixedWidth = 800;
-      const aspectRatio = originalHeight / originalWidth;
-      const resizedHeight = fixedWidth * aspectRatio;
+      const cropHeight = resizedImage.height * 0.1;
+      const croppedHeight = resizedImage.height - cropHeight * 2;
 
-      const resizedImage = await ImageManipulator.manipulateAsync(result.uri, [
-        {
-          resize: {
-            width: fixedWidth,
-            height: resizedHeight,
-          },
-        },
-      ]);
+      const cropRegion = {
+        originX: 0,
+        originY: cropHeight,
+        width: resizedImage.width,
+        height: croppedHeight,
+      };
 
-      await uploadPhoto(resizedImage.uri);
+      const finalImage = await ImageManipulator.manipulateAsync(
+        resizedImage.uri,
+        [{ crop: cropRegion }]
+      );
+
+      await uploadPhoto(finalImage.uri);
     } catch (error) {
       console.error("Error cropping the image:", error);
     } finally {
@@ -119,22 +119,17 @@ export default function App() {
       uri,
       type: "image/jpeg",
       name: generatePhotoName(),
-    };
+    } as any;
     formData.append("image", photo);
 
     try {
-      console.tron.log(`${MerryEndpoints.RECOGNITION}`);
       const response = await axios.post(
         `${MerryEndpoints.RECOGNITION}`,
         formData,
         {
-          headers: {
-            "Content-Type": "multipart/form-data",
-            // Authorization: `Basic ${btoa(`${username}:${password}`)}`,
-          },
+          headers: { "Content-Type": "multipart/form-data" },
         }
       );
-
       setRecognizedCards(response.data);
       setShowCardModal(true);
     } catch (error) {
@@ -142,123 +137,158 @@ export default function App() {
     }
   }
 
-  function cancelUpload() {
-    setLoading(false);
-    setUploadCanceled(true);
-  }
-
   async function checkConnection() {
     try {
       const response = await axios.get(`${MerryEndpoints.PING}`);
-      setPingResponse(response.data.message);
+      setPingResponse(response.data.message.toUpperCase());
+      setTimeout(() => {
+        setPingResponse(null);
+      }, 5000);
     } catch (error) {
-      console.error("Error checking the connection:", error);
       setPingResponse("Error checking the connection");
     }
   }
 
   return (
     <View style={styles.container}>
-      <CameraView style={styles.camera} facing={facing} ref={cameraRef}>
-        <View style={styles.overlay}>
-          <View style={styles.rectangle} />
-        </View>
-      </CameraView>
+      <CameraView
+        style={styles.camera}
+        facing={facing}
+        ref={cameraRef}
+        enableTorch={flash === "off"}
+      />
 
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.button} onPress={toggleCameraFacing}>
-          <Text style={styles.text}>Flip Camera</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.button} onPress={takePicture}>
-          <Text style={styles.text}>Take Picture</Text>
-        </TouchableOpacity>
-        <Modal visible={loading} transparent animationType="fade">
-          <View style={styles.modalContainer}>
-            <ActivityIndicator size="large" color="#0000ff" />
-            <Text style={styles.loadingText}>Processing image...</Text>
-            <TouchableOpacity
-              style={styles.cancelButton}
-              onPress={cancelUpload}
-            >
-              <Text style={styles.cancelButtonText}>
-                Cancel image recognition
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </Modal>
-        <CardListModal
-          visible={showCardModal}
-          data={recognizedCards}
-          onClose={() => setShowCardModal(false)}
+      <View style={styles.overlayImageContainer}>
+        <Image
+          source={require("@assets/images/frame-1.png")}
+          style={styles.overlayImage}
         />
       </View>
-      <TouchableOpacity style={styles.button} onPress={checkConnection}>
-        <Text style={styles.text}>Check Connection</Text>
+
+      <TouchableOpacity
+        style={styles.connectionButton}
+        onPress={checkConnection}
+      >
+        <MaterialIcons name="wifi" size={24} color="white" />
       </TouchableOpacity>
-      {pingResponse && <Text style={styles.pingMessage}>{pingResponse}</Text>}
+
+      <TouchableOpacity style={styles.flashButton} onPress={toggleFlash}>
+        <MaterialIcons
+          name={flash === "off" ? "flash-off" : "flash-on"}
+          size={24}
+          color="white"
+        />
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.flipButton} onPress={toggleCameraFacing}>
+        <MaterialIcons name="flip-camera-ios" size={24} color="white" />
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.captureButton} onPress={takePicture}>
+        <MaterialIcons name="camera-alt" size={32} color="white" />
+      </TouchableOpacity>
+
+      {pingResponse && (
+        <View style={styles.pingMessageContainer}>
+          <Text style={styles.pingMessage}>{pingResponse}</Text>
+        </View>
+      )}
+
+      <Modal visible={loading} transparent animationType="fade">
+        <View style={styles.modalContainer}>
+          <ActivityIndicator size="large" color="#0000ff" />
+          <Text style={styles.loadingText}>Processing image...</Text>
+        </View>
+      </Modal>
+      <CardListModal
+        visible={showCardModal}
+        data={recognizedCards}
+        onClose={() => setShowCardModal(false)}
+      />
     </View>
   );
 }
 
-function generatePhotoName() {
-  const timestamp = Date.now();
-  return `photo_${timestamp}.jpg`;
-}
-
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  container: { flex: 1, backgroundColor: "black" },
+  camera: { flex: 1 },
+  overlayImageContainer: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "white",
   },
-  cancelButtonText: {
-    color: "white",
-    fontWeight: "bold",
+  overlayImage: {
+    resizeMode: "contain",
+    width: "90%",
+  },
+  connectionButton: {
+    position: "absolute",
+    top: 40,
+    right: 20,
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    padding: 10,
+    borderRadius: 20,
+  },
+  flashButton: {
+    position: "absolute",
+    top: 85,
+    right: 20,
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    padding: 10,
+    borderRadius: 20,
+  },
+  flipButton: {
+    position: "absolute",
+    bottom: 30,
+    right: 20,
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    padding: 10,
+    borderRadius: 20,
+  },
+  captureButton: {
+    position: "absolute",
+    bottom: 20,
+    alignSelf: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    padding: 20,
+    borderRadius: 40,
+  },
+  permissionButton: {
+    backgroundColor: "#007BFF",
+    padding: 10,
+    borderRadius: 8,
+    marginTop: 10,
   },
   message: {
     textAlign: "center",
     paddingBottom: 10,
-  },
-  camera: {
-    width: "90%",
-    height: "80%",
-    justifyContent: "center",
-  },
-  overlay: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  rectangle: {
-    borderWidth: 2,
-    borderColor: "red",
-    width: "80%",
-    height: "65%",
-    position: "absolute",
-  },
-  buttonContainer: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    backgroundColor: "transparent",
-    marginTop: 15,
-    marginBottom: 2,
-  },
-  button: {
-    alignItems: "center",
-    padding: 10,
-    backgroundColor: "#007BFF",
-    borderRadius: 5,
-  },
-  text: {
-    fontSize: 18,
-    fontWeight: "bold",
+    fontSize: 16,
     color: "white",
   },
+  text: {
+    color: "white",
+    fontWeight: "bold",
+    fontSize: 18,
+  },
   pingMessage: {
-    marginTop: 10,
     fontSize: 16,
-    color: "green",
+    color: "white",
+    textAlign: "center",
+    width: "100%",
+  },
+  pingMessageContainer: {
+    position: "absolute",
+    top: 45,
+    width: "60%",
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    padding: 10,
+    alignSelf: "center",
+    borderRadius: 8,
+    alignItems: "center",
   },
   modalContainer: {
     flex: 1,
@@ -270,20 +300,5 @@ const styles = StyleSheet.create({
     marginTop: 20,
     fontSize: 18,
     color: "white",
-  },
-  cancelButton: {
-    marginTop: 20,
-    padding: 10,
-    backgroundColor: "#ff4444",
-    borderRadius: 5,
-  },
-  cancelText: {
-    color: "white",
-    fontWeight: "bold",
-  },
-  cancelMessage: {
-    marginTop: 10,
-    fontSize: 16,
-    color: "red",
   },
 });
