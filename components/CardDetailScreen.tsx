@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
+import { postCardCollection } from "@services/api";
 
 interface CardData {
   id: number;
@@ -103,6 +104,16 @@ const CardDetailScreen: React.FC<CardDetailScreenProps> = ({
     ? `${MerryEndpoints.BASE_URL}${selectedIllustration.data.src}`
     : null;
 
+  const handleIncreaseQuantity = async (illustration_slug: string) => {
+    try {
+      await postCardCollection(illustration_slug);
+      alert(`Illustration ${illustration_slug} added to wallet!`);
+    } catch (error) {
+      console.error("Error increasing quantity:", error);
+    }
+  };
+
+
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -180,7 +191,11 @@ const CardDetailScreen: React.FC<CardDetailScreenProps> = ({
 
       <View style={styles.buttonContainer}>
         <TouchableOpacity
-          onPress={() => alert("Illustration added to wallet!")}
+          onPress={() => {
+            if (selectedIllustration?.code) {
+              handleIncreaseQuantity(selectedIllustration.code);
+            }
+          }}
           style={styles.addButton}
         >
           <MaterialIcons name="wallet" size={24} color="white" />

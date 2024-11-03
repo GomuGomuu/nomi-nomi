@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -7,8 +7,9 @@ import {
   TouchableOpacity,
   ScrollView,
   SafeAreaView,
+  RefreshControl,
 } from "react-native";
-import { getCollectionDetails } from "@services/api";
+import { deleteCardCollection, getCollectionDetails, postCardCollection } from "@services/api";
 import { MerryEndpoints } from "@constants/Merry";
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
@@ -26,62 +27,92 @@ interface Card {
 
 interface CollectionDetailScreenProps {
   collectionId: string;
+  fetchCollection: boolean | undefined;
 }
 
 const CollectionDetailScreen: React.FC<CollectionDetailScreenProps> = ({
   collectionId,
+  fetchCollection,
 }) => {
   const navigation = useNavigation();
   const [collectionName, setCollectionName] = useState<string>("");
   const [totalBalance, setTotalBalance] = useState<number>(0);
   const [totalCards, setTotalCards] = useState<number>(0);
   const [illustrations, setIllustrations] = useState<Record<string, Card>>({});
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchCollectionDetails = async () => {
+    if (collectionId) {
+      try {
+        const response = await getCollectionDetails(Number(collectionId));
+        const { collection_name, balance, cards_quantity, illustrations } = response.data;
+        setCollectionName(collection_name);
+        setTotalBalance(balance);
+        setTotalCards(cards_quantity);
+        setIllustrations(illustrations);
+      } catch (error) {
+        console.error("Erro on fetch collection details:", error);
+      }
+    }
+  };
 
   useEffect(() => {
-    const fetchCollectionDetails = async () => {
-      if (collectionId) {
-        try {
-          const response = await getCollectionDetails(Number(collectionId));
-          const { collection_name, balance, cards_quantity, illustrations } =
-            response.data;
-          setCollectionName(collection_name);
-          setTotalBalance(balance);
-          setTotalCards(cards_quantity);
-          setIllustrations(illustrations);
-        } catch (error) {
-          console.error("Erro on fetch collection details:", error);
-        }
-      }
-    };
+    if (fetchCollection) {
+      fetchCollectionDetails();
+    }
+  }, []);
 
+  useEffect(() => {
     fetchCollectionDetails();
   }, [collectionId]);
 
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchCollectionDetails().finally(() => setRefreshing(false));
+  }, [collectionId]);
+
+  const handleIncreaseQuantity = async (illustration_slug: string) => {
+    try {
+      await postCardCollection(illustration_slug);
+    } catch (error) {
+      console.error("Error increasing quantity:", error);
+    } finally {
+      fetchCollectionDetails();
+    }
+  };
+
+  const handleDecreaseQuantity = async (illustration_slug: string) => {
+    try {
+      await deleteCardCollection(illustration_slug);
+    } catch (error) {
+      console.error("Error decreasing quantity:", error);
+    } finally {
+      fetchCollectionDetails();
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContainer}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
         <View style={styles.header}>
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={styles.backButton}
-          >
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
             <Text style={styles.backButtonText}>
               <Ionicons name="arrow-back" size={24} color="#007BFF" />
             </Text>
           </TouchableOpacity>
           <Text style={styles.collectionTitle}>
-            {collectionName === "Vault"
-              ? "All cards collection"
-              : collectionName}
+            {collectionName === "Vault" ? "All cards collection" : collectionName}
           </Text>
         </View>
         <View style={styles.totalizers}>
           <Text style={styles.totalizerText}>N° Cards: {totalCards}</Text>
-          <Text style={styles.totalizerText}>
-            Fortune: R$ {totalBalance.toFixed(2)}
-          </Text>
+          <Text style={styles.totalizerText}>Fortune: R$ {totalBalance.toFixed(2)}</Text>
         </View>
-
         <View style={styles.cardsContainer}>
           {Object.values(illustrations).map((card) => (
             <View key={card.id} style={styles.cardItem}>
@@ -92,15 +123,19 @@ const CollectionDetailScreen: React.FC<CollectionDetailScreenProps> = ({
               <View style={styles.cardInfo}>
                 <Text style={styles.cardTitle}>{card.title}</Text>
                 <Text style={styles.cardDetails}>Code: {card.code}</Text>
-                <Text style={styles.cardDetails}>
-                  Price: R$ {card.price.toFixed(2)}
-                </Text>
+                <Text style={styles.cardDetails}>Price: R$ {card.price.toFixed(2)}</Text>
                 <Text style={styles.cardDetails}>Amount: {card.quantity}</Text>
                 <View style={styles.buttonContainer}>
-                  <TouchableOpacity style={styles.quantityButton}>
+                  <TouchableOpacity
+                    style={styles.quantityButton}
+                    onPress={() => handleDecreaseQuantity(card.code)}
+                  >
                     <Text style={styles.buttonText}>-</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.quantityButton}>
+                  <TouchableOpacity
+                    style={styles.quantityButton}
+                    onPress={() => handleIncreaseQuantity(card.code)}
+                  >
                     <Text style={styles.buttonText}>+</Text>
                   </TouchableOpacity>
                 </View>

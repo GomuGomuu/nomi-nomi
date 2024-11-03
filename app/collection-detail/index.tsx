@@ -15,6 +15,7 @@ const CollectionDetailScreen: React.FC = () => {
   return (
     <CollectionDetail
       collectionId={useRoute<CollectionDetailScreenRouteProp>().params.id}
+      fetchCollection={true}
     />
   );
 };

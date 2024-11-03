@@ -21,6 +21,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { NativeModules } from "react-native";
 import Reactotron from "reactotron-react-native";
 import { MerryEndpoints } from "@constants/Merry";
+import { postCardRecognition } from "@services/api";
 import { MaterialIcons } from "@expo/vector-icons";
 
 const { scriptURL } = NativeModules.SourceCode;
@@ -120,16 +121,8 @@ export default function App() {
       type: "image/jpeg",
       name: generatePhotoName(),
     } as any;
-    formData.append("image", photo);
-
     try {
-      const response = await axios.post(
-        `${MerryEndpoints.RECOGNITION}`,
-        formData,
-        {
-          headers: { "Content-Type": "multipart/form-data" },
-        }
-      );
+      const response = await postCardRecognition(photo)
       setRecognizedCards(response.data);
       setShowCardModal(true);
     } catch (error) {
@@ -139,6 +132,7 @@ export default function App() {
 
   async function checkConnection() {
     try {
+      console.log(`${MerryEndpoints.PING}`);
       const response = await axios.get(`${MerryEndpoints.PING}`);
       setPingResponse(response.data.message.toUpperCase());
       setTimeout(() => {
@@ -174,7 +168,7 @@ export default function App() {
 
       <TouchableOpacity style={styles.flashButton} onPress={toggleFlash}>
         <MaterialIcons
-          name={flash === "off" ? "flash-off" : "flash-on"}
+          name={flash === "off" ? "flash-on" : "flash-off"}
           size={24}
           color="white"
         />

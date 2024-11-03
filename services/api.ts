@@ -26,6 +26,7 @@ export const setAuthToken = (token: string | null) => {
 };
 
 export const ping = async () => {
+  console.log(MerryEndpoints.PING)
   return api.get(MerryEndpoints.PING);
 };
 
@@ -39,5 +40,26 @@ export const getCollectionDetails = async (collectionId: number | null) => {
     : MerryEndpoints.COLLECTION_DETAILS;
   return api.get(url);
 };
+
+export const postCardRecognition = async (photo: File) => {
+  const formData = new FormData();
+  formData.append("image", photo);
+  return api.post(MerryEndpoints.CARD_RECOGNITION, formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+};
+
+export const postCardCollection = async (illustration_slug: string) => {
+  return api.post(MerryEndpoints.MANAGE_ILUSTRATION, { illustration_slug });
+};
+
+
+export const deleteCardCollection = async (illustration_slug: string) => {
+  return api.delete(MerryEndpoints.MANAGE_ILUSTRATION, { data: { illustration_slug } });
+};
+
+
 
 export default api;
